@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 580">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .th { font-size: 13px; font-weight: 600; fill: #e6edf3; }
+      .ts { font-size: 11px; font-weight: 400; fill: #7d8590; }
+      .arr { stroke: #484f58; stroke-width: 0.8; fill: none; }
+      .leader { stroke: #484f58; stroke-width: 0.5; stroke-dasharray: 3 3; fill: none; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="680" height="580" fill="#0d1117"/>
+
+  <!-- USER -->
+  <rect x="280" y="20" width="120" height="36" rx="8" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text class="th" x="340" y="42" text-anchor="middle">Browser / Vue 3</text>
+
+  <!-- LLM GATEWAY -->
+  <rect x="240" y="100" width="200" height="48" rx="8" fill="#0e2a2a" stroke="#1d6b5e" stroke-width="0.8"/>
+  <text class="th" x="340" y="120" text-anchor="middle" fill="#56d4be">llm-gateway :8001</text>
+  <text class="ts" x="340" y="138" text-anchor="middle">chat, stream, routing</text>
+
+  <!-- LITELLM -->
+  <rect x="240" y="196" width="200" height="48" rx="8" fill="#0e2a2a" stroke="#1d6b5e" stroke-width="0.8"/>
+  <text class="th" x="340" y="216" text-anchor="middle" fill="#56d4be">LiteLLM :4000</text>
+  <text class="ts" x="340" y="234" text-anchor="middle">model proxy + callbacks</text>
+
+  <!-- OLLAMA -->
+  <rect x="240" y="292" width="200" height="48" rx="8" fill="#0e2a2a" stroke="#1d6b5e" stroke-width="0.8"/>
+  <text class="th" x="340" y="312" text-anchor="middle" fill="#56d4be">Ollama :11434</text>
+  <text class="ts" x="340" y="330" text-anchor="middle">qwen2.5, gemma3, llama3.2</text>
+
+  <!-- OBSERVABILITY -->
+  <rect x="30" y="196" width="180" height="48" rx="8" fill="#1a1040" stroke="#4b3d8f" stroke-width="0.8"/>
+  <text class="th" x="120" y="216" text-anchor="middle" fill="#a78bfa">observability :8002</text>
+  <text class="ts" x="120" y="234" text-anchor="middle">metrics, traces, grafana</text>
+
+  <!-- EVALUATION -->
+  <rect x="470" y="196" width="180" height="48" rx="8" fill="#1a1040" stroke="#4b3d8f" stroke-width="0.8"/>
+  <text class="th" x="560" y="216" text-anchor="middle" fill="#a78bfa">evaluation :8003</text>
+  <text class="ts" x="560" y="234" text-anchor="middle">judge, A/B, matrix</text>
+
+  <!-- REDIS -->
+  <rect x="470" y="100" width="120" height="36" rx="8" fill="#2a1f00" stroke="#6b4f00" stroke-width="0.8"/>
+  <text class="th" x="530" y="122" text-anchor="middle" fill="#f0883e">Redis</text>
+
+  <!-- PROMETHEUS -->
+  <rect x="30" y="380" width="120" height="36" rx="8" fill="#2a1010" stroke="#6b2020" stroke-width="0.8"/>
+  <text class="th" x="90" y="402" text-anchor="middle" fill="#f85149">Prometheus</text>
+
+  <!-- GRAFANA -->
+  <rect x="170" y="380" width="100" height="36" rx="8" fill="#2a1010" stroke="#6b2020" stroke-width="0.8"/>
+  <text class="th" x="220" y="402" text-anchor="middle" fill="#f85149">Grafana</text>
+
+  <!-- LANGFUSE -->
+  <rect x="470" y="380" width="120" height="36" rx="8" fill="#2a1010" stroke="#6b2020" stroke-width="0.8"/>
+  <text class="th" x="530" y="402" text-anchor="middle" fill="#f85149">Langfuse</text>
+
+  <!-- POSTGRES -->
+  <rect x="470" y="460" width="120" height="36" rx="8" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
+  <text class="th" x="530" y="482" text-anchor="middle">Postgres</text>
+
+  <!-- ARROWS -->
+  <!-- Browser → gateway -->
+  <line x1="340" y1="56" x2="340" y2="98" class="arr" stroke="#56d4be" marker-end="url(#arrow)"/>
+  <text class="ts" x="352" y="80">chat / SSE</text>
+
+  <!-- gateway → litellm -->
+  <line x1="340" y1="148" x2="340" y2="194" class="arr" stroke="#56d4be" marker-end="url(#arrow)"/>
+
+  <!-- litellm → ollama -->
+  <line x1="340" y1="244" x2="340" y2="290" class="arr" stroke="#56d4be" marker-end="url(#arrow)"/>
+
+  <!-- Browser → observability -->
+  <path d="M280 38 Q120 60 120 194" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="142" y="118">metrics/traces</text>
+
+  <!-- Browser → evaluation -->
+  <path d="M400 38 Q560 60 560 194" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="482" y="118">A/B / judge</text>
+
+  <!-- gateway → redis -->
+  <line x1="440" y1="118" x2="468" y2="118" class="arr" stroke="#f0883e" marker-end="url(#arrow)"/>
+  <text class="ts" x="442" y="112">pub events</text>
+
+  <!-- redis → evaluation -->
+  <line x1="530" y1="136" x2="530" y2="194" class="arr" stroke="#f0883e" marker-end="url(#arrow)"/>
+
+  <!-- litellm → prometheus -->
+  <path d="M240 244 Q90 260 90 378" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="44" y="308">scrape</text>
+
+  <!-- litellm → langfuse -->
+  <path d="M440 244 Q530 300 530 378" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="548" y="308">traces</text>
+
+  <!-- observability → prometheus -->
+  <line x1="90" y1="244" x2="90" y2="378" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="96" y="320">PromQL</text>
+
+  <!-- evaluation → langfuse -->
+  <line x1="530" y1="244" x2="530" y2="378" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+  <text class="ts" x="538" y="320">scores</text>
+
+  <!-- evaluation → litellm (judge) -->
+  <path d="M470 220 L442 220" class="arr" stroke="#a78bfa" marker-end="url(#arrow)"/>
+  <text class="ts" x="442" y="214" fill="#a78bfa">judge call</text>
+
+  <!-- langfuse → postgres -->
+  <line x1="530" y1="416" x2="530" y2="458" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+
+  <!-- prometheus → grafana -->
+  <line x1="152" y1="398" x2="168" y2="398" class="arr" stroke="#484f58" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="30" y="510" width="10" height="10" rx="2" fill="#0e2a2a" stroke="#1d6b5e"/>
+  <text class="ts" x="46" y="520">inference layer</text>
+  <rect x="150" y="510" width="10" height="10" rx="2" fill="#1a1040" stroke="#4b3d8f"/>
+  <text class="ts" x="166" y="520">microservices</text>
+  <rect x="270" y="510" width="10" height="10" rx="2" fill="#2a1010" stroke="#6b2020"/>
+  <text class="ts" x="286" y="520">observability infra</text>
+  <rect x="410" y="510" width="10" height="10" rx="2" fill="#2a1f00" stroke="#6b4f00"/>
+  <text class="ts" x="426" y="520">event bus</text>
+</svg>
