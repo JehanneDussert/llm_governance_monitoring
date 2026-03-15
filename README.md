@@ -16,9 +16,19 @@ The evaluation layer goes further: a configurable local judge scores every respo
 
 ## Architecture
 
-![Architecture diagram](./architecture.svg)
+![Architecture diagram](docs/architecture.svg)
 
 Three independent FastAPI microservices share a `back/shared/` layer (Pydantic schemas + config) and communicate via HTTP sync and Redis pub/sub.
+
+## Screenshots
+
+### Model × Use Case Matrix
+![Matrix view](docs/screenshots/matrix.png)
+*Score heatmap per model and use case — auto-routes traffic to best performer.*
+
+### Configurable judge criteria
+![Judge settings](docs/screenshots/judge-settings.png)
+*RGPD, AI Act, ANSSI and OWASP criteria — activate full compliance profiles in one click.*
 
 ---
 
