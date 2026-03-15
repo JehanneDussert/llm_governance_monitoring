@@ -1,4 +1,7 @@
 services:
+
+  # ── Infrastructure ────────────────────────────────────────────
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -28,9 +31,6 @@ services:
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_API_KEY}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
-      LANGFUSE_HOST: ${LANGFUSE_HOST}
     restart: unless-stopped
 
   langfuse-db:
@@ -51,10 +51,10 @@ services:
     ports:
       - "3000:3000"
     environment:
+      DATABASE_URL: postgresql://${LANGFUSE_DB_USER}:${LANGFUSE_DB_PASSWORD}@langfuse-db:5432/langfuse
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${LANGFUSE_NEXTAUTH_URL}
       SALT: ${LANGFUSE_SALT}
-      DATABASE_URL: postgresql://${LANGFUSE_DB_USER}:${LANGFUSE_DB_PASSWORD}@langfuse-db:5432/langfuse
     restart: unless-stopped
 
   prometheus:
@@ -81,6 +81,8 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     restart: unless-stopped
+
+  # ── Microservices ─────────────────────────────────────────────
 
   llm-gateway:
     build:
@@ -137,6 +139,20 @@ services:
       LITELLM_BASE_URL: ${LITELLM_BASE_URL}
       LITELLM_API_KEY: ${LITELLM_API_KEY}
     restart: unless-stopped
+
+  # ── Frontend ──────────────────────────────────────────────────
+
+  front:
+    build:
+      context: ../front
+      dockerfile: Dockerfile
+    container_name: front
+    ports:
+      - "5173:80"
+    depends_on: [llm-gateway, observability, evaluation]
+    restart: unless-stopped
+
+  # ── Reverse proxy ─────────────────────────────────────────────
 
   caddy:
     image: caddy:2-alpine

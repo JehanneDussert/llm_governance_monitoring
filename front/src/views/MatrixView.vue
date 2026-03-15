@@ -127,7 +127,8 @@ const error = ref<string | null>(null)
 const lastUpdated = ref<string | null>(null)
 const judgeStore = useJudgeStore()
 
-const models = computed(() => judgeStore.config?.ab_models ?? ['ollama/qwen2.5:1.5b', 'ollama/llama3.2:3b'])
+const DEFAULT_MODELS = ['ollama/qwen2.5:1.5b', 'ollama/llama3.2:3b']
+const models = computed(() => DEFAULT_MODELS)
 
 const SPARK_COLORS = ['#00e5ff', '#a78bfa']
 
@@ -192,9 +193,9 @@ const matrixWithWinner = computed(() => {
   const result: Record<string, any> = {}
   for (const [id, data] of Object.entries(matrix.value)) {
     let winner = null
-    let winnerScore = null
+    let winnerScore: number | null = null
     let winnerIndex = -1
-    models.value.forEach((model, i) => {
+    models.value.forEach((model: string, i: number) => {
       const cell = data.models[model]
       if (cell?.avg_score !== null && cell?.avg_score !== undefined) {
         if (winnerScore === null || cell.avg_score > winnerScore) {
@@ -257,6 +258,8 @@ useIntervalFn(refresh, 60000)
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+  padding: 0 12px 0 12px;
+  margin: 24px 0 24px 0;
 }
 
 .matrix-header {

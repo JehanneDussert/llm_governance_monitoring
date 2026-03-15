@@ -273,6 +273,7 @@ onMounted(store.fetchConfig)
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin: 24px 0 24px 0;
 }
 
 .section-header { display: flex; flex-direction: column; gap: 4px; }

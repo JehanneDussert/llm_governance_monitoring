@@ -187,7 +187,7 @@ onMounted(refresh)
 .refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
 .refresh-btn.spinning { animation: spin 1s linear infinite; }
 
-.table-meta { font-size: 11px; color: var(--text-dim); }
+.table-meta { font-size: 11px; color: var(--text-dim); margin: 24px 0 24px 0; }
 
 /* Table */
 .traces-table {

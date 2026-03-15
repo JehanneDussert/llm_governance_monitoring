@@ -328,7 +328,7 @@ useIntervalFn(refresh, 30000)
 .stat-val.red { color: var(--red); }
 
 /* Charts */
-.chart-section { display: flex; flex-direction: column; gap: 12px; }
+.chart-section { display: flex; flex-direction: column; gap: 12px; margin: 24px 0 24px 0; }
 
 .section-title {
   font-size: 10px;
