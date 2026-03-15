@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers.metrics import router as metrics_router
 from routers.traces import router as traces_router
 from routers.grafana import router as grafana_router
-from back.shared.src.shared.config import get_observability_settings
+from shared.config import get_observability_settings
 
 settings = get_observability_settings()
 

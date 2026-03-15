@@ -1,34 +1,24 @@
 import json
 from fastapi import APIRouter, Query
-from back.shared.src.shared.schemas import TracesResponse, TraceItem
+from shared.schemas import TracesResponse, TraceItem
 from services.langfuse_client import get_traces_with_scores
 
 router = APIRouter(prefix="/traces", tags=["traces"])
 
 
 def _extract_model(trace: dict) -> str:
-    """
-    La trace parente LiteLLM ne contient pas le modèle directement.
-    On essaie quand même plusieurs endroits, sinon on retourne "ollama" 
-    comme fallback lisible (toutes nos traces viennent d'Ollama).
-    """
     metadata = trace.get("metadata") or {}
-    for key in ("model", "model_group", "deployment"):
+    for key in ("model", "model_group", "deployment", "deployment_model_name"):
         if metadata.get(key):
             return metadata[key]
 
     raw_input = trace.get("input")
     if isinstance(raw_input, dict):
-        for key in ("model", "model_group", "deployment"):
+        for key in ("model_group", "deployment", "deployment_model_name", "model"):
             if raw_input.get(key):
                 return raw_input[key]
 
-    # Fallback : le nom de la trace est "litellm-acompletion"
-    # On retourne "ollama" car c'est notre seul provider configuré
-    name = trace.get("name", "")
-    if "litellm" in name:
-        return "ollama/mistral"
-    return name or "unknown"
+    return "unknown"
 
 
 @router.get("", response_model=TracesResponse)
@@ -40,7 +30,17 @@ async def get_traces(
 
     traces = []
     for t in raw:
-        detected_model = _extract_model(t)
+        # Exclure les traces du juge (system prompt JSON-only)
+        raw_input = t.get("input") or {}
+        if isinstance(raw_input, dict):
+            messages = raw_input.get("messages", [])
+            if any(
+                m.get("role") == "system" and "JSON-only" in str(m.get("content", ""))
+                for m in messages
+            ):
+                continue
+
+        detected_model = t.get('_model') or _extract_model(t)
         if model and model not in detected_model:
             continue
         traces.append(TraceItem(

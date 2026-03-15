@@ -1,38 +1,35 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal
 
 
 # ── Chat ──────────────────────────────────────────────────────
 
 class ChatMessage(BaseModel):
-    role: str = "user"
+    role: str
     content: str
 
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
-    model: Optional[str] = None
-    stream: bool = True
-    session_id: Optional[str] = None
+    model: str
+    stream: bool = False
 
 
 class ChatResponse(BaseModel):
     content: str
     model: str
-    usage: dict
     latency_ms: float
 
 
-# ── Redis event (gateway → evaluation) ───────────────────────
+# ── Events ────────────────────────────────────────────────────
 
 class LLMEvent(BaseModel):
     trace_id: str
     model: str
-    input: str
-    output: str
     latency_ms: float
-    usage: dict
-    timestamp: str
+    input_tokens: int
+    output_tokens: int
+    success: bool
 
 
 # ── Metrics ───────────────────────────────────────────────────
@@ -64,7 +61,7 @@ class TraceItem(BaseModel):
     input_preview: str
     output_preview: str
     latency_ms: float
-    eval_score: Optional[float] = None
+    eval_score: float | None
     timestamp: str
 
 
@@ -79,7 +76,7 @@ class ModelABStats(BaseModel):
     model: str
     sample_size: int
     avg_latency_ms: float
-    avg_eval_score: Optional[float] = None
+    avg_eval_score: float | None = None
     error_rate: float
     avg_tokens: float
 
@@ -88,4 +85,64 @@ class ABTestResponse(BaseModel):
     model_a: ModelABStats
     model_b: ModelABStats
     window: str
-    winner: Optional[str] = None
+    winner: str | None
+
+
+# ── Judge config ──────────────────────────────────────────────
+
+CriterionId = Literal[
+    "pertinence",
+    "sobriety",
+    "bias",
+    "rgpd",
+    "rgaa",
+    "mental_health",
+    "dys",
+    "ai_act",
+    "hallucination",
+    "safety",
+]
+
+
+class JudgeCriterion(BaseModel):
+    id: str                     # CriterionId ou custom
+    label: str
+    description: str
+    enabled: bool = True
+    weight: float = 1.0         # pour le score composite
+
+
+class UseCase(BaseModel):
+    id: str
+    label: str
+    description: str
+
+
+class JudgeConfig(BaseModel):
+    criteria: list[JudgeCriterion]
+    use_cases: list[UseCase]
+    active_use_case_id: str | None = None
+    judge_model: str = "ollama/gemma3:1b"
+    visible_in_chat: list[str] = []     # ids des critères à afficher dans le chat
+    latency_threshold_ms: float | None = None
+    score_threshold: float | None = None
+    error_rate_threshold: float | None = None
+    policy_rules: str = ""              # ex: "répondre uniquement en français"
+
+
+# ── Eval result ───────────────────────────────────────────────
+
+class CriterionScore(BaseModel):
+    criterion_id: str
+    score: float        # 0.0 → 1.0
+    flag: bool = False  # True si problème critique détecté
+    reason: str = ""    # explication courte du juge
+
+
+class EvalResult(BaseModel):
+    trace_id: str
+    model: str
+    use_case_id: str | None
+    composite_score: float
+    criteria_scores: list[CriterionScore]
+    evaluated_at: str

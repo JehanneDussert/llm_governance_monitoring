@@ -5,7 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class GatewaySettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
     litellm_api_key: str
     litellm_base_url: str
     redis_url: str
@@ -23,7 +22,6 @@ class GatewaySettings(BaseSettings):
 
 class ObservabilitySettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
     langfuse_public_key: str
     langfuse_secret_key: str
     langfuse_host: str
@@ -43,7 +41,8 @@ class ObservabilitySettings(BaseSettings):
 
 class EvaluationSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
+    litellm_base_url: str
+    litellm_api_key: str
     langfuse_public_key: str
     langfuse_secret_key: str
     langfuse_host: str

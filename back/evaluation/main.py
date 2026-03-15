@@ -4,19 +4,26 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.ab import router as ab_router
-from jobs.eval_runner import start_batch_loop, start_realtime_consumer
-from back.shared.src.shared.config import get_evaluation_settings
+from routers.config import router as config_router
+from routers.eval import router as eval_router
+from routers.matrix import router as matrix_router
+from services.redis_consumer import consume_events
+from jobs.eval_runner import evaluate_trace
+from shared.schemas import LLMEvent
+from shared.config import get_evaluation_settings
 
 logging.basicConfig(level=logging.INFO)
 settings = get_evaluation_settings()
 
 
+async def handle_event(event: LLMEvent) -> None:
+    """Handler appelé pour chaque event Redis reçu."""
+    pass  # le scoring est déclenché depuis le front via POST /eval/score
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    tasks = [
-        asyncio.create_task(start_realtime_consumer()),
-        asyncio.create_task(start_batch_loop()),
-    ]
+    tasks = [asyncio.create_task(consume_events(handle_event))]
     yield
     for task in tasks:
         task.cancel()
@@ -24,8 +31,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="LLM Evaluation",
-    description="Scoring DeepEval, consumer Redis, A/B test",
-    version="0.1.0",
+    description="Judge configurable, scoring souverain, A/B test",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -38,6 +45,9 @@ app.add_middleware(
 )
 
 app.include_router(ab_router)
+app.include_router(config_router)
+app.include_router(eval_router)
+app.include_router(matrix_router)
 
 
 @app.get("/health")

@@ -2,8 +2,8 @@ import asyncio
 import json
 import logging
 import redis.asyncio as aioredis
-from back.shared.src.shared.config import get_evaluation_settings
-from back.shared.src.shared.schemas import LLMEvent
+from shared.config import get_evaluation_settings
+from shared.schemas import LLMEvent
 
 logger = logging.getLogger(__name__)
 settings = get_evaluation_settings()

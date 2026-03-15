@@ -1,26 +1,10 @@
 from fastapi import APIRouter, Query, Depends
 from statistics import mean
-from back.shared.src.shared.schemas import ABTestResponse, ModelABStats
-from back.shared.src.shared.config import get_evaluation_settings, EvaluationSettings
+from shared.schemas import ABTestResponse, ModelABStats
+from shared.config import get_evaluation_settings, EvaluationSettings
 from services.langfuse_client import get_traces_with_scores
 
 router = APIRouter(prefix="/ab", tags=["ab-test"])
-
-
-def _extract_model(trace: dict) -> str:
-    metadata = trace.get("metadata") or {}
-    for key in ("model", "model_group", "deployment"):
-        if metadata.get(key):
-            return metadata[key]
-    raw_input = trace.get("input") or {}
-    if isinstance(raw_input, dict):
-        for key in ("model_group", "deployment", "model"):
-            if raw_input.get(key):
-                return raw_input[key]
-    name = trace.get("name", "")
-    if "litellm" in name:
-        return "ollama/mistral"
-    return name or "unknown"
 
 
 def _compute_stats(model: str, traces: list[dict]) -> ModelABStats:

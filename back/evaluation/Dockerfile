@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir \
     redis \
     deepeval
 
-COPY shared/ ./shared/
+COPY shared/src/shared/ ./shared/
 COPY evaluation/ .
 
 ENV PYTHONPATH=/app

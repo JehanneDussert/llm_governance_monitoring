@@ -1,9 +1,17 @@
 import time
 import httpx
 from typing import AsyncIterator
-from back.shared.src.shared.config import get_gateway_settings
+from shared.config import get_gateway_settings
 
 settings = get_gateway_settings()
+
+# Timeout généreux pour les modèles locaux lents
+TIMEOUT = httpx.Timeout(
+    connect=10.0,
+    read=300.0,   # 5 min pour les longues réponses
+    write=30.0,
+    pool=10.0,
+)
 
 
 async def chat_completion(
@@ -16,7 +24,6 @@ async def chat_completion(
         "Authorization": f"Bearer {settings.litellm_api_key}",
         "Content-Type": "application/json",
     }
-
     if stream:
         return _stream_completion(payload, headers)
     return await _full_completion(payload, headers)
@@ -24,7 +31,7 @@ async def chat_completion(
 
 async def _full_completion(payload: dict, headers: dict) -> dict:
     start = time.monotonic()
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         r = await client.post(
             f"{settings.litellm_base_url}/chat/completions",
             json=payload,
@@ -32,7 +39,6 @@ async def _full_completion(payload: dict, headers: dict) -> dict:
         )
         r.raise_for_status()
         data = r.json()
-
     latency_ms = (time.monotonic() - start) * 1000
     return {
         "content": data["choices"][0]["message"]["content"],
@@ -43,7 +49,7 @@ async def _full_completion(payload: dict, headers: dict) -> dict:
 
 
 async def _stream_completion(payload: dict, headers: dict) -> AsyncIterator[str]:
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         async with client.stream(
             "POST",
             f"{settings.litellm_base_url}/chat/completions",

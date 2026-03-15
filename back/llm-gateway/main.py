@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.chat import router as chat_router
 from services.redis_publisher import close_redis
-from back.shared.src.shared.config import get_gateway_settings
+from shared.config import get_gateway_settings
 
 settings = get_gateway_settings()
 

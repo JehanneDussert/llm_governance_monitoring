@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir \
     pydantic-settings \
     redis
 
-COPY shared/ ./shared/
+COPY shared/src/shared/ ./shared/
 COPY llm-gateway/ .
 
 ENV PYTHONPATH=/app

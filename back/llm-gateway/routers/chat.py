@@ -3,8 +3,8 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from back.shared.src.shared.schemas import ChatRequest, ChatResponse, LLMEvent
-from back.shared.src.shared.config import get_gateway_settings, GatewaySettings
+from shared.schemas import ChatRequest, ChatResponse, LLMEvent
+from shared.config import get_gateway_settings, GatewaySettings
 from services import litellm_client
 from services.redis_publisher import publish_event
 

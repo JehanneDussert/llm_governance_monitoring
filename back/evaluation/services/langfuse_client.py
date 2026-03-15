@@ -1,6 +1,6 @@
 import base64
 import httpx
-from back.shared.src.shared.config import get_evaluation_settings
+from shared.config import get_evaluation_settings
 
 settings = get_evaluation_settings()
 

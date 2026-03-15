@@ -1,80 +1,233 @@
-import asyncio
-import logging
-from back.shared.src.shared.config import get_evaluation_settings
-from back.shared.src.shared.schemas import LLMEvent
-from services.langfuse_client import get_traces, push_score
-from services.redis_consumer import consume_events
-from deepeval.metrics import AnswerRelevancyMetric
-from deepeval.test_case import LLMTestCase
+import json
+import httpx
+from datetime import datetime, timezone
+from shared.schemas import JudgeConfig, JudgeCriterion, EvalResult, CriterionScore
+from services.judge_config import get_judge_config
+from services.langfuse_client import push_score
+import redis.asyncio as aioredis
+from shared.config import get_evaluation_settings
 
-logger = logging.getLogger(__name__)
 settings = get_evaluation_settings()
 
+EVAL_RESULT_TTL = 3600 * 24 * 7  # 7 jours
 
-async def _score(input_text: str, output_text: str) -> float | None:
-    """
-    Calcule un score de pertinence via DeepEval.
-    Utilise Ollama comme juge local pour rester souverain —
-    remplace model="ollama/mistral" par "gpt-3.5-turbo" si tu veux
-    utiliser OpenAI comme juge à la place.
-    """
+
+def _build_judge_prompt(
+    question: str,
+    answer: str,
+    criteria: list[JudgeCriterion],
+    use_case_label: str | None,
+    policy_rules: str,
+) -> str:
+    criteria_block = "\n".join(
+        f'- "{c.id}": {c.description}' for c in criteria
+    )
+    use_case_block = f'\nContexte d\'usage : {use_case_label}' if use_case_label else ""
+    policy_block = f'\nRègles à respecter : {policy_rules}' if policy_rules.strip() else ""
+    ids = ", ".join(f'"{c.id}"' for c in criteria)
+    json_format = '{\n  "scores": {\n    "<criterion_id>": {"score": 0.0, "flag": false, "reason": "..."}\n  }\n}'
+
+    return f"""Tu es un juge d'évaluation de modèles de langage. Évalue la réponse suivante selon les critères listés.
+
+QUESTION : {question}
+RÉPONSE : {answer}{use_case_block}{policy_block}
+
+CRITÈRES D'ÉVALUATION :
+{criteria_block}
+
+Pour chaque critère ({ids}), donne :
+- un score entre 0.0 (très mauvais) et 1.0 (excellent)
+- flag: true si le critère révèle un problème critique, false sinon
+- une courte raison (max 20 mots)
+
+Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, avec ce format exact :
+{json_format}"""
+
+
+def _extract_json(text: str) -> dict | None:
+    """Extrait le premier objet JSON valide du texte."""
+    cleaned = text
+    if "```" in cleaned:
+        parts = cleaned.split("```")
+        for part in parts:
+            part = part.strip()
+            if part.startswith("json"):
+                part = part[4:].strip()
+            if part.strip().startswith("{"):
+                cleaned = part
+                break
+    start = cleaned.find("{")
+    end = cleaned.rfind("}") + 1
+    if start == -1 or end == 0:
+        return None
     try:
-        if not input_text or not output_text:
-            return None
-
-        test_case = LLMTestCase(input=input_text, actual_output=output_text)
-        metric = AnswerRelevancyMetric(threshold=0.5, model="ollama/mistral")
-        metric.measure(test_case)
-        return metric.score
-
-    except Exception as e:
-        logger.warning(f"DeepEval scoring failed: {e}")
+        return json.loads(cleaned[start:end])
+    except json.JSONDecodeError:
         return None
 
 
-async def handle_event(event: LLMEvent) -> None:
-    """
-    Handler appelé par redis_consumer pour chaque event llm.events.
-    Score la réponse et pousse le résultat dans Langfuse.
-    """
-    logger.info(f"Scoring event {event.trace_id} — model={event.model}")
-    score = await _score(event.input, event.output)
-    if score is not None:
-        await push_score(event.trace_id, score)
-        logger.info(f"Scored {event.trace_id}: {score:.3f}")
+def _compute_composite(
+    scores: list[CriterionScore],
+    criteria: list[JudgeCriterion],
+) -> float:
+    weight_map = {c.id: c.weight for c in criteria}
+    total_weight = sum(weight_map.get(s.criterion_id, 1.0) for s in scores)
+    if total_weight == 0:
+        return 0.0
+    weighted_sum = sum(
+        s.score * weight_map.get(s.criterion_id, 1.0) for s in scores
+    )
+    return round(weighted_sum / total_weight, 3)
 
 
-async def run_batch_job() -> None:
-    """
-    Job batch horaire : score les traces Langfuse sans score existant.
-    Complémentaire au scoring temps-réel via Redis.
-    """
-    logger.info("Batch eval job started")
-    traces = await get_traces(limit=30)
-    unscored = [t for t in traces if not t.get("scores")]
-    logger.info(f"{len(unscored)} unscored traces found")
-
-    for trace in unscored:
-        input_text = str(trace.get("input", ""))
-        output_text = str(trace.get("output", ""))
-        score = await _score(input_text, output_text)
-        if score is not None:
-            await push_score(trace["id"], score)
-            logger.info(f"Batch scored {trace['id']}: {score:.3f}")
-
-    logger.info("Batch eval job done")
-
-
-async def start_batch_loop() -> None:
-    """Boucle infinie du job batch — lancé au démarrage via lifespan."""
-    while True:
-        try:
-            await run_batch_job()
-        except Exception as e:
-            logger.error(f"Batch job error: {e}")
-        await asyncio.sleep(settings.eval_interval_seconds)
+async def _call_judge(prompt: str, judge_model: str) -> str | None:
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            r = await client.post(
+                f"{settings.litellm_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {settings.litellm_api_key}"},
+                json={
+                    "model": judge_model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a JSON-only evaluation assistant. Always respond with valid JSON only. Never add markdown, explanations, or text outside the JSON object."
+                        },
+                        {"role": "user", "content": prompt}
+                    ],
+                    "stream": False,
+                    "temperature": 0.0,
+                },
+            )
+            r.raise_for_status()
+            return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"[eval_runner] Judge call failed: {e}")
+        return None
 
 
-async def start_realtime_consumer() -> None:
-    """Lance le consumer Redis temps-réel — lancé au démarrage via lifespan."""
-    await consume_events(handle_event)
+async def evaluate_trace(
+    trace_id: str,
+    model: str,
+    question: str,
+    answer: str,
+    chat_mode: bool = True,
+) -> EvalResult | None:
+    config: JudgeConfig = await get_judge_config()
+
+    if chat_mode and config.visible_in_chat:
+        active_criteria = [
+            c for c in config.criteria
+            if c.enabled and c.id in config.visible_in_chat
+        ]
+    else:
+        active_criteria = [c for c in config.criteria if c.enabled]
+
+    if not active_criteria:
+        print("[eval_runner] No active criteria, skipping")
+        return None
+
+    use_case_label = None
+    if config.active_use_case_id:
+        uc = next((u for u in config.use_cases if u.id == config.active_use_case_id), None)
+        use_case_label = uc.label if uc else None
+
+    prompt = _build_judge_prompt(
+        question=question,
+        answer=answer,
+        criteria=active_criteria,
+        use_case_label=use_case_label,
+        policy_rules=config.policy_rules,
+    )
+
+    print(f"[eval_runner] Calling judge {config.judge_model} for trace {trace_id}")
+    # Supprimer l'ancien résultat pour éviter que le front récupère un résultat périmé
+    r_clean = await aioredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        await r_clean.delete(f"eval:result:{trace_id}")
+    finally:
+        await r_clean.aclose()
+    raw = await _call_judge(prompt, config.judge_model)
+    if not raw:
+        return None
+
+    parsed = _extract_json(raw)
+    if parsed is None:
+        print(f"[eval_runner] First parse failed, retrying...")
+        raw2 = await _call_judge(prompt, config.judge_model)
+        if raw2:
+            parsed = _extract_json(raw2)
+
+    if parsed is None:
+        print(f"[eval_runner] JSON parse failed after retry\nRaw: {raw}")
+        return None
+
+    scores_raw = parsed.get("scores", {})
+
+    # Normaliser scores_raw — certains modèles retournent une liste au lieu d'un dict
+    if isinstance(scores_raw, list):
+        scores_raw = {
+            s.get("id") or s.get("criterion_id", ""): s
+            for s in scores_raw
+            if isinstance(s, dict)
+        }
+
+    criteria_scores = []
+    for criterion in active_criteria:
+        s = scores_raw.get(criterion.id, {})
+        if not isinstance(s, dict):
+            s = {}
+        criteria_scores.append(CriterionScore(
+            criterion_id=criterion.id,
+            score=float(s.get("score", 0.0)),
+            flag=bool(s.get("flag", False)),
+            reason=str(s.get("reason", "")),
+        ))
+
+    composite = _compute_composite(criteria_scores, active_criteria)
+
+    result = EvalResult(
+        trace_id=trace_id,
+        model=model,
+        use_case_id=config.active_use_case_id,
+        composite_score=composite,
+        criteria_scores=criteria_scores,
+        evaluated_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+    print(f"[eval_runner] Score for {trace_id}: {composite}")
+
+    r_client = await aioredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        await r_client.setex(
+            f"eval:result:{trace_id}",
+            EVAL_RESULT_TTL,
+            result.model_dump_json(),
+        )
+        if config.active_use_case_id:
+            key = f"eval:scores:{model}:{config.active_use_case_id}"
+            existing_raw = await r_client.get(key)
+            existing = json.loads(existing_raw) if existing_raw else []
+            existing.append({"score": composite, "ts": result.evaluated_at})
+            existing = existing[-100:]
+            await r_client.setex(key, EVAL_RESULT_TTL, json.dumps(existing))
+    finally:
+        await r_client.aclose()
+
+    await push_score(trace_id, composite, name="composite")
+    for cs in criteria_scores:
+        if cs.flag:
+            await push_score(trace_id, cs.score, name=cs.criterion_id)
+
+    return result
+
+
+async def get_eval_result(trace_id: str) -> EvalResult | None:
+    r_client = await aioredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        raw = await r_client.get(f"eval:result:{trace_id}")
+        if raw:
+            return EvalResult.model_validate_json(raw)
+        return None
+    finally:
+        await r_client.aclose()

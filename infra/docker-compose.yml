@@ -134,6 +134,8 @@ services:
       AB_MODELS: ${AB_MODELS}
       EVAL_INTERVAL_SECONDS: ${EVAL_INTERVAL_SECONDS}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL}
+      LITELLM_API_KEY: ${LITELLM_API_KEY}
     restart: unless-stopped
 
   caddy:

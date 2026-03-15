@@ -19,7 +19,7 @@ help:
 	@echo "  make logs s=llm-gateway  Logs d'un service spécifique"
 	@echo "  make ps                  État des containers"
 	@echo ""
-	@echo "  make pull-models         Télécharge mistral + llama3.1 dans Ollama"
+	@echo "  make pull-models        
 	@echo ""
 	@echo "  make dev-gateway         Lance llm-gateway en local (hot reload)"
 	@echo "  make dev-observability   Lance observability en local (hot reload)"
@@ -55,8 +55,10 @@ ps:
 # ── Modèles Ollama ────────────────────────────────────────────
 
 pull-models:
-	$(COMPOSE) exec ollama ollama pull mistral
-	$(COMPOSE) exec ollama ollama pull llama3.1
+	$(COMPOSE) exec ollama ollama pull gemma3:1b
+	$(COMPOSE) exec ollama ollama pull llama3.2:3b
+	$(COMPOSE) exec ollama ollama pull qwen2.5:1.5b
+	$(COMPOSE) exec ollama ollama pull deepseek-r1:1.5b
 
 # ── Dev local (hot reload, sans Docker) ──────────────────────
 # Pré-requis : uv installé, services infra lancés via make up

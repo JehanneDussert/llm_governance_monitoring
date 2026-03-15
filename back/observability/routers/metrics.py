@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
-from back.shared.src.shared.schemas import MetricsResponse, ModelMetrics, LatencyStats
-from back.shared.src.shared.config import get_observability_settings, ObservabilitySettings
+from shared.schemas import MetricsResponse, ModelMetrics, LatencyStats
+from shared.config import get_observability_settings, ObservabilitySettings
 from services import prometheus_client
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
@@ -12,13 +12,23 @@ async def get_metrics(
     settings: ObservabilitySettings = Depends(get_observability_settings),
 ):
     results = []
-    for model in ["ollama/mistral", "ollama/llama3.1"]:
-        raw = await prometheus_client.get_model_metrics(model=model, window=window)
-        results.append(ModelMetrics(
-            model=raw["model"],
-            request_count=raw["request_count"],
-            error_rate=raw["error_rate"],
-            latency=LatencyStats(**raw["latency"]),
-            avg_tokens_per_request=raw["avg_tokens_per_request"],
-        ))
+    models = settings.ab_models or []
+    for model in models:
+        try:
+            raw = await prometheus_client.get_model_metrics(model=model, window=window)
+            results.append(ModelMetrics(
+                model=raw["model"],
+                request_count=raw["request_count"],
+                error_rate=raw["error_rate"],
+                latency=LatencyStats(**raw["latency"]),
+                avg_tokens_per_request=raw["avg_tokens_per_request"],
+            ))
+        except Exception:
+            results.append(ModelMetrics(
+                model=model,
+                request_count=0,
+                error_rate=0.0,
+                latency=LatencyStats(p50_ms=0, p95_ms=0, p99_ms=0),
+                avg_tokens_per_request=0.0,
+            ))
     return MetricsResponse(models=results, window=window)

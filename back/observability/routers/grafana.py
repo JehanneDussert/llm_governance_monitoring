@@ -1,6 +1,6 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
-from back.shared.src.shared.config import get_observability_settings, ObservabilitySettings
+from shared.config import get_observability_settings, ObservabilitySettings
 
 router = APIRouter(prefix="/grafana", tags=["grafana"])
 

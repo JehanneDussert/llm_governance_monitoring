@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir \
     pydantic \
     pydantic-settings
 
-COPY shared/ ./shared/
+COPY shared/src/shared/ ./shared/
 COPY observability/ .
 
 ENV PYTHONPATH=/app
