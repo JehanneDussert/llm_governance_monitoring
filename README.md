@@ -16,30 +16,7 @@ The evaluation layer goes further: a configurable local judge scores every respo
 
 ## Architecture
 
-```
-Browser / Vue 3
-    │
-    ├── chat + SSE streaming ──────────► llm-gateway :8001
-    │                                        │
-    │                                        ├── LiteLLM :4000 ──► Ollama :11434
-    │                                        │   (model proxy)     (qwen2.5, gemma3,
-    │                                        │                      llama3.2, deepseek-r1)
-    │                                        │
-    │                                        ├── pub events ──────► Redis
-    │                                        │                          │
-    │                                        │                     sub ▼
-    ├── metrics / traces ───────────────► observability :8002    evaluation :8003
-    │                                        │                        │
-    │                                        ├── PromQL ──────────► Prometheus ◄── scrape ── LiteLLM
-    │                                        │                        │
-    │                                        │                     Grafana
-    │                                        │
-    ├── A/B / judge config ─────────────► evaluation :8003
-                                             │
-                                             ├── judge call ──────► LiteLLM (Ollama)
-                                             │
-                                             └── scores / traces ► Langfuse ──► Postgres
-```
+![Architecture diagram](./architecture.svg)
 
 Three independent FastAPI microservices share a `back/shared/` layer (Pydantic schemas + config) and communicate via HTTP sync and Redis pub/sub.
 
