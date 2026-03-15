@@ -110,6 +110,7 @@ class JudgeCriterion(BaseModel):
     description: str
     enabled: bool = True
     weight: float = 1.0         # pour le score composite
+    tags: list[str] = []        # ex: ["quality", "ai_act", "rgpd"]
 
 
 class UseCase(BaseModel):
@@ -122,7 +123,7 @@ class JudgeConfig(BaseModel):
     criteria: list[JudgeCriterion]
     use_cases: list[UseCase]
     active_use_case_id: str | None = None
-    judge_model: str = "ollama/gemma3:1b"
+    judge_model: str = "ollama/mistral"
     visible_in_chat: list[str] = []     # ids des critères à afficher dans le chat
     latency_threshold_ms: float | None = None
     score_threshold: float | None = None
