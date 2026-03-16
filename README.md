@@ -105,7 +105,7 @@ make pull-models  # downloads qwen2.5:1.5b, gemma3:1b, llama3.2:3b, deepseek-r1:
 ```
 
 Services:
-- Frontend: http://localhost:5173 (`pnpm dev` in `front/`)
+- Frontend: http://localhost:5173
 - Gateway: http://localhost:8001/docs
 - Observability: http://localhost:8002/docs
 - Evaluation: http://localhost:8003/docs
