@@ -1,6 +1,6 @@
 # From metrics to governance
 
-**Production-grade LLM observability stack — sovereign, GDPR-compliant, open source.**
+**Production-grade LLM observability stack: sovereign, GDPR-compliant, open source.**
 
 Monitor, trace, evaluate and compare open-source language models in production. No data leaves your infrastructure. Built for organizations that need AI governance by design.
 
