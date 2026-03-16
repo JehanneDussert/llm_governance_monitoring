@@ -1,4 +1,4 @@
-# llm_gonvernance_monitoring
+# From metrics to governance
 
 **Production-grade LLM observability stack — sovereign, GDPR-compliant, open source.**
 
