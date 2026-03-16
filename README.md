@@ -8,9 +8,9 @@ Monitor, trace, evaluate and compare open-source language models in production. 
 
 ## Why this exists
 
-Most LLM tooling assumes you're using OpenAI and don't care where your data goes. This stack is built for the opposite constraint: local models, full data sovereignty, and observability derived directly from production metrics — not synthetic benchmarks.
+Most LLM tooling assumes you're using OpenAI and don't care where your data goes. This stack is built for the opposite constraint: local models, full data sovereignty, and observability derived directly from production metrics, not synthetic benchmarks.
 
-The evaluation layer goes further: a configurable local judge scores every response against criteria you define — RGPD compliance, bias detection, AI Act alignment, cognitive load, digital sobriety — and routes traffic to the best-performing model per task automatically.
+The evaluation layer goes one step further: a configurable local evaluator assesses each response against the criteria you define (GDPR compliance, bias detection, AI Act compliance, cognitive load, digital minimalism) and automatically routes traffic to the best-performing model for each task **based on YOUR internal governance criteria**.
 
 ---
 
@@ -37,11 +37,11 @@ Three independent FastAPI microservices share a `back/shared/` layer (Pydantic s
 
 ### Model × Use Case Matrix
 ![Matrix view](docs/screenshots/matrix.png)
-*Score heatmap per model and use case — auto-routes traffic to best performer.*
+*Score heatmap per model and use case: auto-routes traffic to best performer.*
 
 ### Configurable judge criteria
 ![Judge settings](docs/screenshots/judge-settings.png)
-*RGPD, AI Act, ANSSI and OWASP criteria — activate full compliance profiles in one click.*
+*RGPD, AI Act, French National Agency for the Security of Information Systems criteria: activate full compliance profiles in one click.*
 
 ---
 
@@ -65,32 +65,32 @@ Three independent FastAPI microservices share a `back/shared/` layer (Pydantic s
 
 ### llm-gateway — :8001
 ```
-POST /chat          — chat completion (streaming SSE + non-streaming)
+POST /chat          # chat completion (streaming SSE + non-streaming)
 GET  /health
 ```
 
 ### observability — :8002
 ```
-GET /metrics?window=24h    — latency p50/p95/p99, error rate, request count per model
-GET /traces?limit=50       — production traces with eval scores (judge traces filtered)
-GET /grafana/dashboards    — Grafana dashboard links
+GET /metrics?window=24h    # latency p50/p95/p99, error rate, request count per model
+GET /traces?limit=50       # production traces with eval scores (judge traces filtered)
+GET /grafana/dashboards    # Grafana dashboard links
 ```
 
 ### evaluation — :8003
 ```
-GET  /ab/results?limit=50          — A/B comparison between two models
-GET  /matrix                       — use_case × model score matrix
-GET  /config/judge                 — judge configuration
-PUT  /config/judge                 — update judge configuration
-POST /eval/score                   — trigger async evaluation (202 immediately)
-GET  /eval/result/{trace_id}       — poll for evaluation result
+GET  /ab/results?limit=50          # A/B comparison between two models
+GET  /matrix                       # use_case × model score matrix
+GET  /config/judge                 # judge configuration
+PUT  /config/judge                 # update judge configuration
+POST /eval/score                   # trigger async evaluation (202 immediately)
+GET  /eval/result/{trace_id}       # poll for evaluation result
 ```
 
 ---
 
 ## Quickstart
 
-**Prerequisites:** Docker, Docker Compose.
+**Prerequisites:** Docker, docker compose.
 
 ```bash
 git clone https://github.com/JehanneDussert/llm_gonvernance_monitoring
@@ -103,6 +103,8 @@ docker compose -f infra/docker-compose.yml up -d
 
 make pull-models  # downloads qwen2.5:1.5b, gemma3:1b, llama3.2:3b, deepseek-r1:1.5b
 ```
+
+If necessary, additional models can be replaced (just remember to configure them in your litellm configuration as well).
 
 Services:
 - Frontend: http://localhost:5173
@@ -117,7 +119,7 @@ Services:
 
 ## Configurable judge
 
-The evaluation layer runs a local LLM-as-judge after each response. Criteria, weights, use cases and routing preferences are configurable from the UI — no code changes needed.
+The evaluation layer runs a local LLM-as-judge after each response. Criteria, weights, use cases and routing preferences are configurable from the UI.
 
 **Built-in criteria:**
 
@@ -135,13 +137,13 @@ The evaluation layer runs a local LLM-as-judge after each response. Criteria, we
 | Fuite de données | security, anssi, owasp_llm02 | ✅ |
 | Refus éthique | security, ethics, anssi | ✅ |
 
-Criteria are tagged by domain (`quality`, `ethics`, `compliance`, `security`, `ai_act`, `rgpd`, `anssi`…) — making it easy to activate a full compliance profile in one click. Custom criteria can be added from the Settings view.
+Criteria are tagged by domain (`quality`, `ethics`, `compliance`, `security`, `ai_act`, `rgpd`, `anssi`…) making it easy to activate a full compliance profile in one click. Custom criteria can be added from the Settings view.
 
-Custom criteria can be added from the Settings view.
+Custom criteria can be added from the settings view.
 
-**Use cases:** General, Summary, Translation, Code, Administrative writing, Analysis — plus custom.
+**Use cases:** general, summary, translation, code, administrative writing, analysis. Add your custom ones!
 
-The judge model (default: `ollama/gemma3:1b`) runs locally. No data leaves your infrastructure.
+The judge model (default: `ollama/gemma3:1b`) runs locally.
 
 ---
 
@@ -183,15 +185,15 @@ Admin writing      0.88           0.74
 
 ## Key design decisions
 
-**Local evaluation judge** — quality scoring runs on Ollama, not GPT-3.5. Sovereign and usable in air-gapped or regulated environments.
+**Local evaluation judge:** quality scoring runs on Ollama. Sovereign and usable in air-gapped or regulated environments.
 
-**Governance from metrics** — the observability layer translates raw Prometheus metrics into structured governance signals. Dashboards are provisioned automatically via Grafana.
+**Governance from metrics:** the observability layer translates raw Prometheus metrics into structured governance signals. Dashboards are provisioned automatically via Grafana.
 
-**Judge traces filtered** — evaluation calls to LiteLLM are excluded from the traces view so only user interactions appear.
+**Judge traces filtered:** evaluation calls to LiteLLM are excluded from the traces view so only user interactions appear.
 
-**pip in Docker, uv locally** — uv for fast local dev iteration, plain pip in containers for deterministic builds.
+**pip in Docker, uv locally:** uv for fast local dev iteration, plain pip in containers for deterministic builds.
 
-**Shared schema layer** — all three microservices share `back/shared/src/shared/` for Pydantic schemas and config, ensuring type consistency across service boundaries.
+**Shared schema layer:** all three microservices share `back/shared/src/shared/` for Pydantic schemas and config, ensuring type consistency across service boundaries.
 
 ---
 
@@ -203,15 +205,15 @@ llm-monitor/
 ├── Makefile
 ├── README.md
 ├── back/
-│   ├── shared/src/shared/   — config.py, schemas.py
-│   ├── llm-gateway/         — chat endpoint, Redis publisher
-│   ├── observability/       — metrics, traces, Grafana proxy
-│   └── evaluation/          — judge, A/B test, matrix, eval runner
+│   ├── shared/src/shared/   # config.py, schemas.py
+│   ├── llm-gateway/         # chat endpoint, Redis publisher
+│   ├── observability/       # metrics, traces, Grafana proxy
+│   └── evaluation/          # judge, A/B test, matrix, eval runner
 ├── front/
 │   └── src/
-│       ├── views/           — Chat, Metrics, Traces, ABTest, Matrix, Settings
-│       ├── components/      — MessageScore (async judge display)
-│       ├── stores/          — chat.ts, judge.ts
+│       ├── views/           # Chat, Metrics, Traces, ABTest, Matrix, Settings
+│       ├── components/      # MessageScore (async judge display)
+│       ├── stores/          # chat.ts, judge.ts
 │       └── api/client.ts
 └── infra/
     ├── docker-compose.yml
@@ -224,20 +226,26 @@ llm-monitor/
 
 ## Roadmap
 
-- [ ] Smart routing — auto-select model based on use case + criterion weights
-- [ ] Drift detection — score trend alerts in MetricsView
-- [ ] Audit log — consolidated compliance view (`/audit`)
-- [ ] asyncio.gather — parallelize observation fetches
-- [ ] Redis cache — 30s TTL on /metrics and /ab/results
-- [ ] EvalAP integration — push traces to Etalab's evaluation platform
+- [ ] Smart routing: auto-select model based on use case + criterion weights
+- [ ] Drift detection: score trend alerts in MetricsView
+- [ ] Audit log: consolidated compliance view (`/audit`)
+- [ ] asyncio.gather: parallelize observation fetches
+- [ ] Redis cache: 30s TTL on /metrics and /ab/results
+- [ ] EvalAP integration: push traces to Etalab's evaluation platform
 
 ---
 
 ## Context
 
-Built as a public demonstration of "AI governance by design" — the practice of deriving governance frameworks directly from production observability data rather than static policy documents.
+Built as a public demonstration of "AI governance by design" the practice of deriving governance frameworks directly from production observability data.
 
 Relevant prior work: AI doctrine coordination & GenAI Tech Lead at [DGFiP](https://www.impots.gouv.fr), [EIG program](https://eig.numerique.gouv.fr), DINUM Albert project, European Commission Horizon evaluator.
+
+## Relevant regulations / guidelines
+
+- GDPR, AI Act, EU guidelines
+- French National Agency for the Security of Information Systems (ANSSI), French data protection authority, National institute for assessing and securing artificial intelligence (INESIA) guidelines
+- French General Guidelines for Improving Accessibility (RGAA) guidelines
 
 ---
 
