@@ -16,7 +16,20 @@ The evaluation layer goes further: a configurable local judge scores every respo
 
 ## Architecture
 
-![Architecture diagram](docs/architecture.svg)
+```bash
+User
+│
+▼
+Frontend :5173 (Vue 3 + ECharts)
+│
+├──► llm-gateway :8001 ──► LiteLLM ──► Ollama (qwen / gemma / llama / deepseek)
+│         │                                │
+│         └──── Redis pub/sub ◄────────────┘
+│
+├──► observability :8002 ──► Prometheus / Grafana / Langfuse
+│
+└──► evaluation :8003 ──► Local judge (Ollama) ──► A/B · Matrix · Score
+```
 
 Three independent FastAPI microservices share a `back/shared/` layer (Pydantic schemas + config) and communicate via HTTP sync and Redis pub/sub.
 
