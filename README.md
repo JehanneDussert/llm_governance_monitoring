@@ -137,7 +137,7 @@ The evaluation layer runs a local LLM-as-judge after each response. Criteria, we
 | Fuite de données | security, anssi, owasp_llm02 | ✅ |
 | Refus éthique | security, ethics, anssi | ✅ |
 
-Criteria are tagged by domain (`quality`, `ethics`, `compliance`, `security`, `ai_act`, `rgpd`, `anssi`…) making it easy to activate a full compliance profile in one click. Custom criteria can be added from the Settings view.
+Criteria are tagged by domain (`quality`, `ethics`, `compliance`, `security`, `ai_act`, `rgpd`, `anssi`…) making it easy to activate a full compliance profile in one click.
 
 Custom criteria can be added from the settings view.
 
@@ -232,12 +232,15 @@ llm-monitor/
 - [ ] asyncio.gather: parallelize observation fetches
 - [ ] Redis cache: 30s TTL on /metrics and /ab/results
 - [ ] EvalAP integration: push traces to Etalab's evaluation platform
+- [ ] Regulatory benchmark alignment: coverage mapping against [COMPL-AI](https://compl-ai.org) framework for systematic AI Act compliance assessment
 
 ---
 
 ## Context
 
-Built as a public demonstration of "AI governance by design" the practice of deriving governance frameworks directly from production observability data.
+Built as a public demonstration of "AI governance by design", the practice of deriving governance frameworks directly from production observability data rather than static policy documents.
+
+Designed for regulated environments where data sovereignty is non-negotiable: local inference, self-hosted tracing, no third-party data exposure. Directly applicable to AI Act Article 9 requirements (risk management systems for high-risk AI) and NIS2 operational continuity constraints.
 
 Relevant prior work: AI doctrine coordination & GenAI Tech Lead at [DGFiP](https://www.impots.gouv.fr), [EIG program](https://eig.numerique.gouv.fr), DINUM Albert project, European Commission Horizon evaluator.
 
