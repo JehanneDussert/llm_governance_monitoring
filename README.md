@@ -93,8 +93,8 @@ GET  /eval/result/{trace_id}       # poll for evaluation result
 **Prerequisites:** Docker, docker compose.
 
 ```bash
-git clone https://github.com/JehanneDussert/llm_gonvernance_monitoring
-cd llm_gonvernance_monitoring
+git clone https://github.com/JehanneDussert/llm_governance_monitoring
+cd llm_governance_monitoring
 
 cp .env.example .env
 # Fill in Langfuse keys
